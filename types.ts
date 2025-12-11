@@ -8,6 +8,7 @@ export interface Script {
 
 export interface CharacterProfile {
   hostName: string;
+  language?: string;
 }
 
 export enum AppView {

@@ -42,26 +42,29 @@ export const deleteScript = async (id: string): Promise<void> => {
 
 export const getProfile = async (): Promise<CharacterProfile> => {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { hostName: 'Player1' };
+  if (!user) return { hostName: 'Player1', language: 'English' };
 
   // Use maybeSingle() instead of single() to avoid 406 errors if row doesn't exist
   const { data, error } = await supabase
     .from('profiles')
-    .select('host_name')
+    .select('host_name, language')
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (error) {
     console.error('Error fetching profile:', error);
-    return { hostName: 'Player1' };
+    return { hostName: 'Player1', language: 'English' };
   }
 
   if (!data) {
-    return { hostName: 'Player1' };
+    return { hostName: 'Player1', language: 'English' };
   }
 
   // Ensure we never return null, fallback to empty string or default
-  return { hostName: data.host_name || 'Player1' };
+  return { 
+    hostName: data.host_name || 'Player1',
+    language: data.language || 'English'
+  };
 };
 
 export const saveProfile = async (profile: CharacterProfile): Promise<void> => {
@@ -72,8 +75,9 @@ export const saveProfile = async (profile: CharacterProfile): Promise<void> => {
     .from('profiles')
     .upsert({ 
       user_id: user.id, 
-      host_name: profile.hostName 
-    });
+      host_name: profile.hostName,
+      language: profile.language || 'English'
+    }, { onConflict: 'user_id' });
 
   if (error) throw error;
 };

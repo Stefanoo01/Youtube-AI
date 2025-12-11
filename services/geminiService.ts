@@ -2,11 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { Script, CharacterProfile } from '../types';
 
 const getAiClient = () => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("API Key not found in environment variables.");
-  }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 };
 
 export const generateVideoScript = async (
@@ -15,6 +11,7 @@ export const generateVideoScript = async (
   profile: CharacterProfile
 ): Promise<string> => {
   const ai = getAiClient();
+  const targetLanguage = profile.language || 'English';
 
   // We use existing scripts as "Few-Shot" examples to teach the AI the style.
   const uploadedScripts = existingScripts.filter(s => s.type === 'uploaded');
@@ -27,8 +24,7 @@ export const generateVideoScript = async (
     lengthInstruction = `IMPORTANT: The generated script MUST be approximately ${avgWords} words long to match the user's typical video length.`;
   }
 
-  // We use ALL uploaded scripts. Gemini Flash has a 1M+ token context window, 
-  // so we can fit dozens or hundreds of scripts easily. This acts as "In-Context Fine-Tuning".
+  // We use ALL uploaded scripts. Gemini Flash has a 1M+ token context window.
   const trainingExamples = uploadedScripts
     .map(s => `
 --- EXAMPLE SCRIPT START ---
@@ -44,25 +40,27 @@ ${s.content}
     
     Your goal is to write a script for a new video that perfectly mimics the voice, personality, sentence structure, and length of the provided example scripts.
     
+    Formatting Rules (CRITICAL):
+    1. The output MUST be written in ${targetLanguage}.
+    2. Use [Square Brackets] for ALL stage directions, visuals, and gameplay actions.
+    3. KEEP STAGE DIRECTIONS INLINE with the dialogue. Example: "I'm going to jump! [Jumps] That was close." DO NOT put them on their own line.
+    4. Use **Double Asterisks** for words that should be spoken with emphasis/boldness.
+    5. Format lines as: "${profile.hostName}: Dialogue here".
+    
     Key Style Points:
     - Maintain the specific dynamic of ${profile.hostName} as a SOLO commentator.
     - Do not include a second host or partner. This is a single-player video.
-    - Use Minecraft terminology correctly.
-    - Include stage directions for gameplay actions in brackets, e.g., [Starts punching wood].
+    - Use Minecraft terminology correctly (in ${targetLanguage}).
     - Keep the tone fun, engaging, and suitable for a general gaming audience.
-    - STICK TO THE LENGTH OF THE EXAMPLES. Do not make it significantly shorter or longer than the average example.
-    
-    Format the output clearly with the character name (${profile.hostName}: ...).
+    - STICK TO THE LENGTH OF THE EXAMPLES.
   `;
-
-  console.log("Training examples:", trainingExamples);
 
   const prompt = `
     Here are examples of our previous scripts to learn our style and length:
     ${trainingExamples.length > 0 ? trainingExamples : "No previous scripts provided. Use a generic energetic single-player Minecraft style."}
 
     TASK:
-    Write a new script for a Minecraft video about: "${topic}".
+    Write a new script in ${targetLanguage} for a Minecraft video about: "${topic}".
     ${lengthInstruction}
   `;
 
@@ -77,6 +75,54 @@ ${s.content}
     });
 
     return response.text || "Failed to generate script content.";
+  } catch (error) {
+    console.error("Gemini API Error:", error);
+    throw error;
+  }
+};
+
+export const regenerateScriptSection = async (
+  sectionContent: string,
+  profile: CharacterProfile
+): Promise<string> => {
+  const ai = getAiClient();
+  const targetLanguage = profile.language || 'English';
+  
+  const systemInstruction = `
+  You are a professional YouTube scriptwriter for a Minecraft channel featuring a single host: ${profile.hostName}.
+    
+    Your goal is to write a script for a new video that perfectly mimics the voice, personality, sentence structure, and length of the provided example scripts.
+    
+    Formatting Rules (CRITICAL):
+    1. Use [Square Brackets] for ALL stage directions, visuals, and gameplay actions.
+    3. Use **Double Asterisks** for words that should be spoken with emphasis/boldness.
+    4. Format lines as: "${profile.hostName}: Dialogue here".
+    
+    Key Style Points:
+    - Output MUST be in ${targetLanguage}.
+    - Use Minecraft terminology correctly.
+    - Keep the tone fun, engaging, and suitable for a general gaming audience.
+    - STICK TO THE LENGTH OF THE EXAMPLES.
+  `;
+
+  const prompt = `
+    REWRITE THIS SCRIPT SEGMENT IN ${targetLanguage}:
+    "${sectionContent}"
+    
+    Output ONLY the rewritten text.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        systemInstruction: systemInstruction,
+        temperature: 0.8,
+      }
+    });
+
+    return response.text?.trim() || sectionContent;
   } catch (error) {
     console.error("Gemini API Error:", error);
     throw error;
