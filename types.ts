@@ -1,3 +1,4 @@
+
 export interface Script {
   id: string;
   title: string;
@@ -9,6 +10,13 @@ export interface Script {
 export interface CharacterProfile {
   hostName: string;
   language?: string;
+}
+
+export interface ScriptSection {
+  id: string;
+  content: string;
+  isRegenerating: boolean;
+  isEditing: boolean;
 }
 
 export enum AppView {

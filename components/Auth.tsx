@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { Sparkles, LogIn, UserPlus, AlertCircle } from 'lucide-react';
@@ -36,32 +37,32 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-        <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-700 rounded-2xl shadow-lg flex items-center justify-center mb-4">
-                <span className="text-white font-bold text-3xl">M</span>
+    <div className="min-h-screen bg-brand-bg flex items-center justify-center p-6">
+      <div className="max-w-md w-full bg-brand-card border border-slate-800 rounded-[3rem] p-12 shadow-2xl">
+        <div className="flex flex-col items-center mb-12">
+            <div className="w-20 h-20 bg-brand-blue rounded-3xl shadow-xl flex items-center justify-center mb-6">
+                <span className="text-white font-black text-4xl">M</span>
             </div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">MineScript AI</h1>
-            <p className="text-slate-400 mt-2">Your specialized scriptwriting assistant</p>
+            <h1 className="text-4xl font-black text-white tracking-tighter">MineScript</h1>
+            <p className="text-slate-500 mt-2 font-bold uppercase tracking-widest text-[10px]">AI Video Studio</p>
         </div>
 
-        <form onSubmit={handleAuth} className="space-y-4">
+        <form onSubmit={handleAuth} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 px-1">Email Access</label>
             <input
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-green-500"
+              className="w-full bg-brand-bg border border-slate-800 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-brand-blue transition-all"
               type="email"
-              placeholder="steve@minecraft.com"
+              placeholder="creatore@minecraft.it"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 px-1">Security Key</label>
             <input
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-green-500"
+              className="w-full bg-brand-bg border border-slate-800 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-brand-blue transition-all"
               type="password"
               placeholder="••••••••"
               value={password}
@@ -71,33 +72,33 @@ export default function Auth() {
           </div>
 
           {error && (
-            <div className="flex items-center space-x-2 text-red-400 bg-red-900/20 p-3 rounded-lg text-sm border border-red-900/50">
+            <div className="flex items-center space-x-3 text-red-400 bg-red-950/20 p-4 rounded-2xl text-xs border border-red-900/30">
                 <AlertCircle size={16} />
-                <span>{error}</span>
+                <span className="font-bold">{error}</span>
             </div>
           )}
 
           <button
-            className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-green-900/30 flex items-center justify-center space-x-2"
+            className="w-full bg-brand-blue hover:brightness-110 text-white font-black uppercase tracking-widest py-4 rounded-2xl transition-all shadow-xl shadow-brand-blue/20 flex items-center justify-center space-x-3 active:scale-[0.97]"
             disabled={loading}
           >
             {loading ? (
-                <span className="animate-pulse">Loading...</span>
+                <span className="animate-pulse">Sincronizzazione...</span>
             ) : (
                 <>
                     {isLogin ? <LogIn size={20} /> : <UserPlus size={20} />}
-                    <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+                    <span>{isLogin ? 'Enter Studio' : 'Create ID'}</span>
                 </>
             )}
           </button>
         </form>
         
-        <div className="mt-6 text-center">
+        <div className="mt-10 text-center">
             <button 
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-slate-400 hover:text-white transition-colors"
+                className="text-xs font-bold text-slate-500 hover:text-white transition-colors"
             >
-                {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+                {isLogin ? "NEW CREATOR? START HERE" : "ALREADY REGISTERED? LOGIN"}
             </button>
         </div>
       </div>

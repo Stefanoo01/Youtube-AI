@@ -1,7 +1,4 @@
 {
   "name": "MineScript AI",
-  "description": "A specialized scriptwriting assistant for Minecraft YouTubers that learns from your previous videos to generate new content in your unique style.",
-  "requestFramePermissions": [
-    "microphone"
-  ]
+  "description": "A specialized scriptwriting assistant for Minecraft YouTubers that learns from your previous videos to generate new content in your unique style."
 }

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -14,6 +15,12 @@
               sans: ['Inter', 'sans-serif'],
             },
             colors: {
+              brand: {
+                blue: '#1681a3',
+                bg: '#09090f',
+                card: '#151820',
+                accent: '#efa42a'
+              },
               minecraft: {
                 green: '#568c40',
                 dark: '#1d1d1d',
@@ -27,8 +34,23 @@
     </script>
     <style>
       body {
-        background-color: #0f172a; /* Slate 900 */
-        color: #e2e8f0; /* Slate 200 */
+        background-color: #09090f;
+        color: #e2e8f0;
+      }
+      /* Custom Scrollbar for the dark theme */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #09090f;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #151820;
+        border-radius: 10px;
+        border: 2px solid #09090f;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #1681a3;
       }
     </style>
   <script type="importmap">
@@ -44,7 +66,6 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>
