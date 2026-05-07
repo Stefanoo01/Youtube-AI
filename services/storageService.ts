@@ -41,8 +41,11 @@ export const deleteScript = async (id: string): Promise<void> => {
 };
 
 export const updateScript = async (id: string, updates: Partial<Script>): Promise<void> => {
-  const { error } = await supabase.from('scripts').update(updates).eq('id', id);
+  const { data, error } = await supabase.from('scripts').update(updates).eq('id', id).select();
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('Nessuna riga aggiornata. Potrebbe mancare la policy UPDATE su Supabase.');
+  }
 };
 
 export const getProfile = async (): Promise<CharacterProfile> => {

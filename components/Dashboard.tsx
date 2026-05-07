@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Script } from '../types';
-import { FileText, Sparkles, Clock, X, Copy, Check, Calendar, Type, ChevronRight, Eye, EyeOff, Pencil, Trash2, Save, Loader2 } from 'lucide-react';
+import { FileText, Sparkles, Clock, X, Copy, Check, Calendar, Type, ChevronRight, Eye, EyeOff, Pencil, Trash2, Save, Loader2, MoreVertical, BookOpen } from 'lucide-react';
 import { deleteScript, updateScript } from '../services/storageService';
 
 interface DashboardProps {
@@ -13,7 +13,8 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ scripts, onChangeView, onRefresh }) => {
   const [selectedScript, setSelectedScript] = useState<Script | null>(null);
   const [copied, setCopied] = useState(false);
-  const [showDirections, setShowDirections] = useState(true);
+  const [showDirections, setShowDirections] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -79,6 +80,20 @@ const Dashboard: React.FC<DashboardProps> = ({ scripts, onChangeView, onRefresh 
       window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: 'Errore nella cancellazione.', type: 'error' }}));
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleConvertToTraining = async () => {
+    if (!selectedScript) return;
+    try {
+      await updateScript(selectedScript.id, { type: 'uploaded' });
+      setSelectedScript({ ...selectedScript, type: 'uploaded' });
+      setShowDropdown(false);
+      if (onRefresh) onRefresh();
+      window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: 'Aggiunto ai Training Data!' }}));
+    } catch (e) {
+      console.error(e);
+      window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: 'Errore durante la conversione.', type: 'error' }}));
     }
   };
 
@@ -238,27 +253,61 @@ const Dashboard: React.FC<DashboardProps> = ({ scripts, onChangeView, onRefresh 
                 </button>
                 <div className="w-[1px] h-12 bg-slate-800 mx-2"></div>
                 {!isEditing && (
-                  <>
+                  <div className="relative">
                     <button 
-                      onClick={() => handleCopy(selectedScript.content)}
+                      onClick={() => setShowDropdown(!showDropdown)}
                       className="p-4 bg-brand-bg hover:bg-slate-800 rounded-2xl text-slate-400 hover:text-white transition-all border border-slate-800"
                     >
-                      {copied ? <Check size={28} className="text-brand-blue" /> : <Copy size={28} />}
+                      <MoreVertical size={28} />
                     </button>
-                    <button 
-                      onClick={() => handleEditClick(selectedScript)}
-                      className="p-4 bg-brand-bg hover:bg-brand-blue/20 rounded-2xl text-slate-400 hover:text-brand-blue transition-all border border-slate-800"
-                    >
-                      <Pencil size={28} />
-                    </button>
-                    <button 
-                      onClick={handleDelete}
-                      disabled={isDeleting}
-                      className="p-4 bg-brand-bg hover:bg-red-500/20 rounded-2xl text-slate-400 hover:text-red-500 transition-all border border-slate-800 disabled:opacity-50"
-                    >
-                      {isDeleting ? <Loader2 className="animate-spin" size={28} /> : <Trash2 size={28} />}
-                    </button>
-                  </>
+                    
+                    {showDropdown && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowDropdown(false)}
+                        ></div>
+                        <div className="absolute right-0 top-full mt-2 w-64 bg-brand-card border border-slate-700 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                          <button 
+                            onClick={() => { handleCopy(selectedScript.content); setShowDropdown(false); }}
+                            className="w-full text-left px-5 py-4 text-slate-300 hover:bg-slate-800 flex items-center space-x-3 transition-colors font-medium"
+                          >
+                            {copied ? <Check size={18} className="text-brand-blue" /> : <Copy size={18} />}
+                            <span>{copied ? 'Copied!' : 'Copy Script'}</span>
+                          </button>
+                          
+                          {selectedScript.type === 'generated' && (
+                            <button 
+                              onClick={handleConvertToTraining}
+                              className="w-full text-left px-5 py-4 text-brand-blue hover:bg-brand-blue/10 flex items-center space-x-3 transition-colors font-medium"
+                            >
+                              <BookOpen size={18} />
+                              <span>Use as Training Data</span>
+                            </button>
+                          )}
+
+                          <button 
+                            onClick={() => { handleEditClick(selectedScript); setShowDropdown(false); }}
+                            className="w-full text-left px-5 py-4 text-slate-300 hover:bg-slate-800 flex items-center space-x-3 transition-colors font-medium"
+                          >
+                            <Pencil size={18} />
+                            <span>Edit Script</span>
+                          </button>
+                          
+                          <div className="border-t border-slate-700 my-1"></div>
+                          
+                          <button 
+                            onClick={() => { handleDelete(); setShowDropdown(false); }}
+                            disabled={isDeleting}
+                            className="w-full text-left px-5 py-4 text-red-400 hover:bg-red-400/10 flex items-center space-x-3 transition-colors disabled:opacity-50 font-medium"
+                          >
+                            {isDeleting ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
+                            <span>Delete Script</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
                 <button 
                   onClick={() => { setSelectedScript(null); setIsEditing(false); }}
