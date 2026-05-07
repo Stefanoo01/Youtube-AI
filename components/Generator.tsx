@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Save, RefreshCw, Copy, Check, Video, MessageSquare, FileText, Pencil, Wand2, X, Eye, EyeOff } from 'lucide-react';
 import { Script, CharacterProfile, ScriptSection } from '../types';
-import { regenerateScriptSection } from '../services/geminiService';
+import { regenerateScriptSection, GEMINI_MODELS } from '../services/geminiService';
 import { saveScript } from '../services/storageService';
 
 interface GeneratorProps {
@@ -15,7 +15,7 @@ interface GeneratorProps {
   sections: ScriptSection[];
   setSections: React.Dispatch<React.SetStateAction<ScriptSection[]>>;
   isGenerating: boolean;
-  onGenerate: (prompt: string) => void;
+  onGenerate: (prompt: string, modelId: string) => void;
   error: string;
 }
 
@@ -35,6 +35,7 @@ const Generator: React.FC<GeneratorProps> = ({
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showDirections, setShowDirections] = useState(true);
+  const [selectedModel, setSelectedModel] = useState(GEMINI_MODELS[0].id);
 
   const handleRegenerateSection = async (id: string) => {
     const sectionIndex = sections.findIndex(s => s.id === id);
@@ -43,7 +44,8 @@ const Generator: React.FC<GeneratorProps> = ({
     setSections(prev => prev.map(s => s.id === id ? { ...s, isRegenerating: true, isEditing: false } : s));
 
     try {
-      const newContent = await regenerateScriptSection(sections[sectionIndex].content, profile);
+      const profileWithModel = { ...profile, selectedModel };
+      const newContent = await regenerateScriptSection(sections[sectionIndex].content, profileWithModel);
       setSections(prev => prev.map(s => s.id === id ? { 
         ...s, 
         content: newContent, 
@@ -125,7 +127,23 @@ const Generator: React.FC<GeneratorProps> = ({
             </div>
             
             <div className="space-y-4">
-              <label className="block text-slate-300 font-semibold">Video Concept</label>
+              <div className="flex items-center justify-between">
+                <label className="block text-slate-300 font-semibold">Video Concept</label>
+                <div className="relative">
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    className="appearance-none bg-slate-800/50 text-slate-300 border border-slate-700 rounded-lg py-1.5 pl-3 pr-8 text-xs font-bold focus:outline-none focus:border-brand-blue transition-colors cursor-pointer"
+                  >
+                    {GEMINI_MODELS.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-slate-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+                </div>
+              </div>
               <textarea 
                   className="w-full h-48 bg-brand-bg border border-slate-800 rounded-2xl p-5 text-white focus:outline-none focus:border-brand-blue transition-all resize-none shadow-inner"
                   placeholder="What is this video about?"
@@ -135,7 +153,7 @@ const Generator: React.FC<GeneratorProps> = ({
               />
               
               <button
-                  onClick={() => onGenerate(prompt)}
+                  onClick={() => onGenerate(prompt, selectedModel)}
                   disabled={isGenerating || !prompt.trim()}
                   className="w-full bg-brand-blue hover:brightness-110 disabled:opacity-30 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-bold shadow-xl flex items-center justify-center space-x-2 transition-all active:scale-[0.98]"
               >

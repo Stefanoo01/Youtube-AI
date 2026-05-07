@@ -40,6 +40,11 @@ export const deleteScript = async (id: string): Promise<void> => {
   if (error) throw error;
 };
 
+export const updateScript = async (id: string, updates: Partial<Script>): Promise<void> => {
+  const { error } = await supabase.from('scripts').update(updates).eq('id', id);
+  if (error) throw error;
+};
+
 export const getProfile = async (): Promise<CharacterProfile> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { hostName: 'Player1', language: 'English' };

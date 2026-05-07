@@ -65,7 +65,7 @@ const App: React.FC = () => {
     }
   };
 
-  const startGeneration = useCallback(async (prompt: string) => {
+  const startGeneration = useCallback(async (prompt: string, modelId: string) => {
     if (!prompt.trim() || isGenerating) return;
     
     setIsGenerating(true);
@@ -73,7 +73,8 @@ const App: React.FC = () => {
     setGenSections([]);
     
     try {
-      const result = await generateVideoScript(prompt, scripts, profile);
+      const profileWithModel = { ...profile, selectedModel: modelId };
+      const result = await generateVideoScript(prompt, scripts, profileWithModel);
       const parsedSections = result
         .split(/\n\s*\n/)
         .filter(text => text.trim().length > 0)
@@ -108,7 +109,7 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (currentView) {
       case AppView.DASHBOARD:
-        return <Dashboard scripts={scripts} onChangeView={setCurrentView} />;
+        return <Dashboard scripts={scripts} onChangeView={setCurrentView} onRefresh={refreshData} />;
       case AppView.UPLOADS:
         return <ScriptUpload existingScripts={scripts} onRefresh={refreshData} />;
       case AppView.GENERATOR:
@@ -129,7 +130,7 @@ const App: React.FC = () => {
       case AppView.SETTINGS:
         return <Settings />;
       default:
-        return <Dashboard scripts={scripts} onChangeView={setCurrentView} />;
+        return <Dashboard scripts={scripts} onChangeView={setCurrentView} onRefresh={refreshData} />;
     }
   };
 

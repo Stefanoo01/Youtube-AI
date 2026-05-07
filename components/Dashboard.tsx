@@ -1,17 +1,25 @@
 
 import React, { useState } from 'react';
 import { Script } from '../types';
-import { FileText, Sparkles, Clock, X, Copy, Check, Calendar, Type, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { FileText, Sparkles, Clock, X, Copy, Check, Calendar, Type, ChevronRight, Eye, EyeOff, Pencil, Trash2, Save, Loader2 } from 'lucide-react';
+import { deleteScript, updateScript } from '../services/storageService';
 
 interface DashboardProps {
   scripts: Script[];
   onChangeView: (view: any) => void;
+  onRefresh?: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ scripts, onChangeView }) => {
+const Dashboard: React.FC<DashboardProps> = ({ scripts, onChangeView, onRefresh }) => {
   const [selectedScript, setSelectedScript] = useState<Script | null>(null);
   const [copied, setCopied] = useState(false);
   const [showDirections, setShowDirections] = useState(true);
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const uploadedCount = scripts.filter(s => s.type === 'uploaded').length;
   const generatedCount = scripts.filter(s => s.type === 'generated').length;
@@ -33,6 +41,45 @@ const Dashboard: React.FC<DashboardProps> = ({ scripts, onChangeView }) => {
     navigator.clipboard.writeText(contentToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleEditClick = (script: Script) => {
+    setEditTitle(script.title);
+    setEditContent(script.content);
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedScript) return;
+    setIsSaving(true);
+    try {
+      await updateScript(selectedScript.id, { title: editTitle, content: editContent });
+      setSelectedScript({ ...selectedScript, title: editTitle, content: editContent });
+      setIsEditing(false);
+      if (onRefresh) onRefresh();
+    } catch (e) {
+      console.error(e);
+      window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: 'Errore nel salvataggio.', type: 'error' }}));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedScript) return;
+    if (!confirm('Sei sicuro di voler cancellare questo script?')) return;
+    setIsDeleting(true);
+    try {
+      await deleteScript(selectedScript.id);
+      setSelectedScript(null);
+      if (onRefresh) onRefresh();
+      window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: 'Script cancellato con successo.' }}));
+    } catch (e) {
+      console.error(e);
+      window.dispatchEvent(new CustomEvent('app-toast', { detail: { message: 'Errore nella cancellazione.', type: 'error' }}));
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const renderFormattedText = (text: string) => {
@@ -157,9 +204,17 @@ const Dashboard: React.FC<DashboardProps> = ({ scripts, onChangeView }) => {
           ></div>
           <div className="relative w-full max-w-5xl bg-brand-card border border-slate-800 rounded-[3rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
             <div className="p-10 border-b border-slate-800/50 flex justify-between items-start bg-brand-card/50">
-              <div className="space-y-3">
+              <div className="space-y-3 flex-1 mr-8">
                 <div className="flex items-center space-x-4">
-                  <h3 className="text-3xl font-black text-white leading-none tracking-tight">{selectedScript.title}</h3>
+                  {isEditing ? (
+                    <input 
+                      value={editTitle} 
+                      onChange={e => setEditTitle(e.target.value)} 
+                      className="text-3xl font-black text-white leading-none tracking-tight bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 w-full focus:outline-none focus:border-brand-blue"
+                    />
+                  ) : (
+                    <h3 className="text-3xl font-black text-white leading-none tracking-tight">{selectedScript.title}</h3>
+                  )}
                   <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                     selectedScript.type === 'uploaded' 
                       ? 'bg-brand-blue/10 text-brand-blue border-brand-blue/30' 
@@ -173,7 +228,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scripts, onChangeView }) => {
                   <span className="flex items-center"><Type size={14} className="mr-2" /> {selectedScript.content.trim().split(/\s+/).length} words</span>
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
                 <button 
                   onClick={() => setShowDirections(!showDirections)}
                   className={`flex items-center space-x-3 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${showDirections ? 'bg-brand-accent/10 text-brand-accent border-brand-accent/30' : 'bg-slate-800 text-slate-500 border-slate-700'}`}
@@ -182,15 +237,32 @@ const Dashboard: React.FC<DashboardProps> = ({ scripts, onChangeView }) => {
                   <span>{showDirections ? 'Visible' : 'Hidden'}</span>
                 </button>
                 <div className="w-[1px] h-12 bg-slate-800 mx-2"></div>
+                {!isEditing && (
+                  <>
+                    <button 
+                      onClick={() => handleCopy(selectedScript.content)}
+                      className="p-4 bg-brand-bg hover:bg-slate-800 rounded-2xl text-slate-400 hover:text-white transition-all border border-slate-800"
+                    >
+                      {copied ? <Check size={28} className="text-brand-blue" /> : <Copy size={28} />}
+                    </button>
+                    <button 
+                      onClick={() => handleEditClick(selectedScript)}
+                      className="p-4 bg-brand-bg hover:bg-brand-blue/20 rounded-2xl text-slate-400 hover:text-brand-blue transition-all border border-slate-800"
+                    >
+                      <Pencil size={28} />
+                    </button>
+                    <button 
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      className="p-4 bg-brand-bg hover:bg-red-500/20 rounded-2xl text-slate-400 hover:text-red-500 transition-all border border-slate-800 disabled:opacity-50"
+                    >
+                      {isDeleting ? <Loader2 className="animate-spin" size={28} /> : <Trash2 size={28} />}
+                    </button>
+                  </>
+                )}
                 <button 
-                  onClick={() => handleCopy(selectedScript.content)}
-                  className="p-4 bg-brand-bg hover:bg-slate-800 rounded-2xl text-slate-400 hover:text-white transition-all border border-slate-800"
-                >
-                  {copied ? <Check size={28} className="text-brand-blue" /> : <Copy size={28} />}
-                </button>
-                <button 
-                  onClick={() => setSelectedScript(null)}
-                  className="p-4 bg-brand-bg hover:bg-slate-800 rounded-2xl text-slate-400 hover:text-white transition-all border border-slate-800"
+                  onClick={() => { setSelectedScript(null); setIsEditing(false); }}
+                  className="p-4 bg-brand-bg hover:bg-slate-800 rounded-2xl text-slate-400 hover:text-white transition-all border border-slate-800 ml-2"
                 >
                   <X size={28} />
                 </button>
@@ -199,13 +271,32 @@ const Dashboard: React.FC<DashboardProps> = ({ scripts, onChangeView }) => {
 
             <div className="flex-1 overflow-y-auto p-12 bg-brand-bg font-sans text-lg leading-relaxed">
               <div className="max-w-4xl mx-auto whitespace-pre-wrap">
-                {renderFormattedText(selectedScript.content)}
+                {isEditing ? (
+                  <textarea
+                    value={editContent}
+                    onChange={e => setEditContent(e.target.value)}
+                    className="w-full h-[50vh] bg-slate-900 border border-slate-700 rounded-2xl p-6 text-slate-100 focus:outline-none focus:border-brand-blue resize-none"
+                    spellCheck={false}
+                  />
+                ) : (
+                  renderFormattedText(selectedScript.content)
+                )}
               </div>
             </div>
 
-            <div className="p-8 border-t border-slate-800/50 bg-brand-card/50 flex justify-end">
+            <div className="p-8 border-t border-slate-800/50 bg-brand-card/50 flex justify-end space-x-4">
+              {isEditing && (
+                <button 
+                  onClick={handleSaveEdit}
+                  disabled={isSaving}
+                  className="px-10 py-4 bg-brand-blue hover:brightness-110 text-white rounded-2xl font-black uppercase tracking-widest transition-all flex items-center shadow-lg disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="animate-spin mr-2" size={20} /> : <Save className="mr-2" size={20} />}
+                  Save Changes
+                </button>
+              )}
               <button 
-                onClick={() => setSelectedScript(null)}
+                onClick={() => { setSelectedScript(null); setIsEditing(false); }}
                 className="px-10 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-black uppercase tracking-widest transition-all"
               >
                 Close Viewer
