@@ -1,6 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
 import { Script, CharacterProfile } from '../types';
 
+const MODELS = [
+  "gemini-3.1-flash-lite-preview",  // 1° preferito
+  "gemini-2.5-flash",               // 2° fallback
+  "gemini-3-flash-preview",         // 3° fallback
+  "gemini-2.5-flash-lite",          // 4° ultimo fallback
+];
+
 const getAiClient = () => {
   return new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 };
@@ -64,21 +71,28 @@ ${s.content}
     ${lengthInstruction}
   `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite-preview',
-      contents: prompt,
-      config: {
-        systemInstruction: systemInstruction,
-        temperature: 0.7, 
-      }
-    });
+  let lastError: unknown;
 
-    return response.text || "Failed to generate script content.";
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw error;
+  for (const model of MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          systemInstruction: systemInstruction,
+          temperature: 0.7, 
+        }
+      });
+
+      return response.text || "Failed to generate script content.";
+    } catch (error) {
+      console.warn(`Model ${model} failed, falling back to next model...`, error);
+      lastError = error;
+    }
   }
+
+  console.error("All Gemini models failed:", lastError);
+  throw lastError;
 };
 
 export const regenerateScriptSection = async (
@@ -112,19 +126,26 @@ export const regenerateScriptSection = async (
     Output ONLY the rewritten text.
   `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite-preview',
-      contents: prompt,
-      config: {
-        systemInstruction: systemInstruction,
-        temperature: 0.8,
-      }
-    });
+  let lastError: unknown;
 
-    return response.text?.trim() || sectionContent;
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw error;
+  for (const model of MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          systemInstruction: systemInstruction,
+          temperature: 0.8,
+        }
+      });
+
+      return response.text?.trim() || sectionContent;
+    } catch (error) {
+      console.warn(`Model ${model} failed, falling back to next model...`, error);
+      lastError = error;
+    }
   }
+
+  console.error("All Gemini models failed:", lastError);
+  throw lastError;
 };
