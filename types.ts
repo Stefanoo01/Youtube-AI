@@ -10,6 +10,7 @@ export interface Script {
 export interface CharacterProfile {
   hostName: string;
   language?: string;
+  selectedModel?: string;
 }
 
 export interface ScriptSection {

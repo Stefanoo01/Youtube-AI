@@ -3,6 +3,7 @@ import React from 'react';
 import { LayoutDashboard, FileText, Sparkles, Settings, Menu, X, LogOut } from 'lucide-react';
 import { AppView } from '../types';
 import { supabase } from '../services/supabaseClient';
+import { ToastNotification } from './ToastNotification';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -99,6 +100,8 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeView }) 
             onClick={() => setIsMobileMenuOpen(false)}
         ></div>
       )}
+      
+      <ToastNotification />
     </div>
   );
 };

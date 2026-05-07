@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Save, User, Loader2, Globe } from 'lucide-react';
+import { Save, User, Loader2, Globe, Cpu } from 'lucide-react';
 import { CharacterProfile } from '../types';
 import { getProfile, saveProfile } from '../services/storageService';
+import { GEMINI_MODELS } from '../services/geminiService';
 
 const LANGUAGES = [
   { code: 'English', label: 'English' },
@@ -102,6 +103,30 @@ const Settings: React.FC = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                   </div>
                 </div>
+            </div>
+
+            <div>
+                <label className="block text-slate-400 text-xs font-black uppercase tracking-widest mb-3 flex items-center">
+                    <Cpu size={14} className="mr-2 text-brand-blue" />
+                    AI Model (Default & Fallbacks)
+                </label>
+                <div className="relative">
+                  <select 
+                      value={profile.selectedModel || GEMINI_MODELS[0].id}
+                      onChange={(e) => setProfile({...profile, selectedModel: e.target.value})}
+                      className="w-full bg-brand-bg border border-slate-800 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-brand-blue appearance-none cursor-pointer font-bold"
+                  >
+                      {GEMINI_MODELS.map((model) => (
+                          <option key={model.id} value={model.id}>
+                              {model.name}
+                          </option>
+                      ))}
+                  </select>
+                  <div className="absolute right-6 top-1/2 transform -translate-y-1/2 pointer-events-none text-slate-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+                </div>
+                <p className="text-slate-500 text-xs mt-2">If the selected model fails, the system will automatically fallback to other available models.</p>
             </div>
 
             <div className="pt-6">

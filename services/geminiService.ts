@@ -1,11 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 import { Script, CharacterProfile } from '../types';
 
-const MODELS = [
-  "gemini-3.1-flash-lite-preview",  // 1° preferito
-  "gemini-2.5-flash",               // 2° fallback
-  "gemini-3-flash-preview",         // 3° fallback
-  "gemini-2.5-flash-lite",          // 4° ultimo fallback
+export const GEMINI_MODELS = [
+  { id: "gemini-3.1-flash-lite-preview", name: "Gemini 3.1 Flash Lite" },
+  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
+  { id: "gemini-3-flash-preview", name: "Gemini 3 Flash" },
+  { id: "gemini-2.5-flash-lite", name: "Gemini 2.5 Flash Lite" },
 ];
 
 const getAiClient = () => {
@@ -72,11 +72,18 @@ ${s.content}
   `;
 
   let lastError: unknown;
+  
+  const defaultModelId = profile.selectedModel || GEMINI_MODELS[0].id;
+  const orderedModels = [
+    defaultModelId,
+    ...GEMINI_MODELS.map(m => m.id).filter(id => id !== defaultModelId)
+  ];
 
-  for (const model of MODELS) {
+  for (let i = 0; i < orderedModels.length; i++) {
+    const modelId = orderedModels[i];
     try {
       const response = await ai.models.generateContent({
-        model,
+        model: modelId,
         contents: prompt,
         config: {
           systemInstruction: systemInstruction,
@@ -86,8 +93,22 @@ ${s.content}
 
       return response.text || "Failed to generate script content.";
     } catch (error) {
-      console.warn(`Model ${model} failed, falling back to next model...`, error);
+      console.warn(`Model ${modelId} failed, falling back...`, error);
       lastError = error;
+      
+      const failedModelName = GEMINI_MODELS.find(m => m.id === modelId)?.name || modelId;
+      const nextModelId = orderedModels[i + 1];
+      
+      if (nextModelId) {
+        const nextModelName = GEMINI_MODELS.find(m => m.id === nextModelId)?.name || nextModelId;
+        window.dispatchEvent(new CustomEvent('app-toast', { 
+          detail: { message: `Errore in ${failedModelName}, fallback su ${nextModelName}...` } 
+        }));
+      } else {
+        window.dispatchEvent(new CustomEvent('app-toast', { 
+          detail: { message: `Tutti i modelli hanno fallito.`, type: 'error' } 
+        }));
+      }
     }
   }
 
@@ -128,10 +149,17 @@ export const regenerateScriptSection = async (
 
   let lastError: unknown;
 
-  for (const model of MODELS) {
+  const defaultModelId = profile.selectedModel || GEMINI_MODELS[0].id;
+  const orderedModels = [
+    defaultModelId,
+    ...GEMINI_MODELS.map(m => m.id).filter(id => id !== defaultModelId)
+  ];
+
+  for (let i = 0; i < orderedModels.length; i++) {
+    const modelId = orderedModels[i];
     try {
       const response = await ai.models.generateContent({
-        model,
+        model: modelId,
         contents: prompt,
         config: {
           systemInstruction: systemInstruction,
@@ -141,8 +169,22 @@ export const regenerateScriptSection = async (
 
       return response.text?.trim() || sectionContent;
     } catch (error) {
-      console.warn(`Model ${model} failed, falling back to next model...`, error);
+      console.warn(`Model ${modelId} failed, falling back...`, error);
       lastError = error;
+
+      const failedModelName = GEMINI_MODELS.find(m => m.id === modelId)?.name || modelId;
+      const nextModelId = orderedModels[i + 1];
+      
+      if (nextModelId) {
+        const nextModelName = GEMINI_MODELS.find(m => m.id === nextModelId)?.name || nextModelId;
+        window.dispatchEvent(new CustomEvent('app-toast', { 
+          detail: { message: `Errore in ${failedModelName}, fallback su ${nextModelName}...` } 
+        }));
+      } else {
+        window.dispatchEvent(new CustomEvent('app-toast', { 
+          detail: { message: `Tutti i modelli hanno fallito.`, type: 'error' } 
+        }));
+      }
     }
   }
 
